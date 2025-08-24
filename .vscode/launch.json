@@ -1,0 +1,18 @@
+{
+  "configurations": [
+
+    {
+      "name": "Debug STM32",
+      "cwd": "${workspaceFolder}",
+      "executable": "my-blinky.elf",
+      "request": "launch",
+      "type": "cortex-debug",
+      "servertype": "openocd",
+      "device": "STM32F411CE",
+      "configFiles": [
+        "interface/stlink.cfg",
+        "target/stm32f4x.cfg"
+      ]
+    }
+  ]
+}
