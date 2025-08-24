@@ -5,7 +5,9 @@ extern int main(void);
 void Reset_Handler(void);
 void sys_tick_handler(void);
 void Default_Handler(void);
+void usart1_isr(void);
 void usart2_isr(void);
+
 
 /* Symbols defined in the linker script */
 extern uint32_t _sidata, _sdata, _edata, _sbss, _ebss, _stack;
@@ -26,7 +28,8 @@ void (* const vector_table[])(void) = {
     0,
     Default_Handler,
     sys_tick_handler,
-    [54] = usart2_isr   // USART2
+    [53] = usart2_isr,
+    [54] = usart2_isr  
 };
 
 

@@ -13,8 +13,10 @@
 
 #define BOOTLOADER_SIZE (0x8000U)
 #define UART_PORT       (GPIOA)
-#define RX_PIN          (GPIO3)
-#define TX_PIN          (GPIO2)
+#define RX_PIN1          (GPIO10)
+#define TX_PIN1          (GPIO9)
+#define RX_PIN2          (GPIO3)
+#define TX_PIN2          (GPIO2)
 
 
 static void gpio_setup(void){  
@@ -22,8 +24,8 @@ static void gpio_setup(void){
     gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO13);
 
     rcc_periph_clock_enable(RCC_GPIOA);
-    gpio_mode_setup(UART_PORT, GPIO_MODE_AF, GPIO_PUPD_NONE, TX_PIN|RX_PIN);
-    gpio_set_af(UART_PORT, GPIO_AF7, TX_PIN|RX_PIN);
+    gpio_mode_setup(UART_PORT, GPIO_MODE_AF, GPIO_PUPD_NONE, TX_PIN1|RX_PIN1|TX_PIN2|RX_PIN2);
+    gpio_set_af(UART_PORT, GPIO_AF7, TX_PIN1|RX_PIN1|TX_PIN2|RX_PIN2);
 }
 
 
@@ -39,11 +41,7 @@ int main(void)
 
  
     uint64_t start_time = system_get_ticks();
-           // gpio_toggle(GPIOC, GPIO13);
-             for (int i = 0; i < 5000000; ++i) 
-        {//gpio_toggle(GPIOC, GPIO13);
-            __asm__("nop");
-        }
+      
 gpio_toggle(GPIOC, GPIO13);
     
     while(1)
@@ -54,17 +52,17 @@ gpio_toggle(GPIOC, GPIO13);
 
       if(system_get_ticks()-start_time>=200)
         {
-       // gpio_toggle(GPIOC, GPIO13);
+        gpio_toggle(GPIOC, GPIO13);
         
         start_time=system_get_ticks();
 
-        uart_write_byte('s');
+        uart_write_byte('s',2);
         }
 
-        if(uart_data_available()){
+        if(uart_data_available(2)){
            // gpio_toggle(GPIOC, GPIO13);
-            uint8_t data = uart_read_byte();
-            uart_write_byte(data);
+            uint8_t data = uart_read_byte(2);
+            uart_write_byte(data,2);
         }
 
     }
