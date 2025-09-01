@@ -1074,47 +1074,47 @@ END GROUP
 .text           0x08000100     0x1fcc
                 0x08000100                        . = ALIGN (0x4)
  *(.text)
- .text          0x08000100      0xd9c src/firmware.o
+ .text          0x08000100      0xd98 src/firmware.o
                 0x08000148                format_raw_gps_data
                 0x08000b14                main
- .text          0x08000e9c       0x8c ../shared/src/core/fw_flash.o
-                0x08000e9c                fw_flash_erase_sector
-                0x08000ec0                fw_flash_write
-                0x08000ee6                fw_flash_read
- .text          0x08000f28      0x128 ../shared/src/core/ring-buffer.o
-                0x08000f28                ring_buffer_setup
-                0x08000f5a                ring_buffer_empty
-                0x08000f80                ring_buffer_write
-                0x08000fd0                ring_buffer_read
-                0x08001020                ring_buffer_write_status
-                0x08001038                ring_buffer_read_status
- .text          0x08001050       0x84 ../shared/src/core/system.o
-                0x08001050                sys_tick_handler
-                0x080010a8                system_get_ticks
-                0x080010c4                system_setup
- .text          0x080010d4      0x3b0 ../shared/src/core/uart.o
-                0x080010d4                usart1_isr
-                0x08001120                usart2_isr
-                0x0800116c                uart_setup1
-                0x080011d8                uart_setup2
-                0x08001244                uart_write_byte1
-                0x08001268                uart_write1
-                0x0800129e                uart_read1
-                0x080012f4                uart_read_byte1
-                0x08001312                uart_data_available1
-                0x0800133c                uart_data_read_status1
-                0x08001350                uart_data_write_status1
-                0x08001364                uart_write_byte2
-                0x08001388                uart_write2
-                0x080013be                uart_read2
-                0x08001414                uart_read_byte2
-                0x08001432                uart_data_available2
-                0x0800145c                uart_data_read_status2
-                0x08001470                uart_data_write_status2
- .text          0x08001484       0x64 startup.o
-                0x08001484                Default_Handler
-                0x0800148c                Reset_Handler
- *fill*         0x080014e8       0x18 
+ .text          0x08000e98       0x8c ../shared/src/core/fw_flash.o
+                0x08000e98                fw_flash_erase_sector
+                0x08000ebc                fw_flash_write
+                0x08000ee2                fw_flash_read
+ .text          0x08000f24      0x128 ../shared/src/core/ring-buffer.o
+                0x08000f24                ring_buffer_setup
+                0x08000f56                ring_buffer_empty
+                0x08000f7c                ring_buffer_write
+                0x08000fcc                ring_buffer_read
+                0x0800101c                ring_buffer_write_status
+                0x08001034                ring_buffer_read_status
+ .text          0x0800104c       0x84 ../shared/src/core/system.o
+                0x0800104c                sys_tick_handler
+                0x080010a4                system_get_ticks
+                0x080010c0                system_setup
+ .text          0x080010d0      0x3b0 ../shared/src/core/uart.o
+                0x080010d0                usart1_isr
+                0x0800111c                usart2_isr
+                0x08001168                uart_setup1
+                0x080011d4                uart_setup2
+                0x08001240                uart_write_byte1
+                0x08001264                uart_write1
+                0x0800129a                uart_read1
+                0x080012f0                uart_read_byte1
+                0x0800130e                uart_data_available1
+                0x08001338                uart_data_read_status1
+                0x0800134c                uart_data_write_status1
+                0x08001360                uart_write_byte2
+                0x08001384                uart_write2
+                0x080013ba                uart_read2
+                0x08001410                uart_read_byte2
+                0x0800142e                uart_data_available2
+                0x08001458                uart_data_read_status2
+                0x0800146c                uart_data_write_status2
+ .text          0x08001480       0x64 startup.o
+                0x08001480                Default_Handler
+                0x08001488                Reset_Handler
+ *fill*         0x080014e4       0x1c 
  .text          0x08001500       0xd8 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc.a(libc_a-strlen.o)
                 0x08001500                strlen
  *(.text*)
@@ -1465,27 +1465,27 @@ LOAD linker stubs
  .debug_aranges
                 0x00000638       0x20 ../libopencm3/lib\libopencm3_stm32f4.a(pwr.o)
 
-.debug_line     0x00000000     0x5866
- .debug_line    0x00000000      0x7fb src/firmware.o
- .debug_line    0x000007fb      0x1be ../shared/src/core/fw_flash.o
- .debug_line    0x000009b9      0x1d2 ../shared/src/core/ring-buffer.o
- .debug_line    0x00000b8b      0x1c3 ../shared/src/core/system.o
- .debug_line    0x00000d4e      0x3a5 ../shared/src/core/uart.o
- .debug_line    0x000010f3      0x143 startup.o
- .debug_line    0x00001236      0x3ba ../libopencm3/lib\libopencm3_stm32f4.a(flash_common_f.o)
- .debug_line    0x000015f0      0x61a ../libopencm3/lib\libopencm3_stm32f4.a(flash_common_f24.o)
- .debug_line    0x00001c0a      0x450 ../libopencm3/lib\libopencm3_stm32f4.a(gpio_common_all.o)
- .debug_line    0x0000205a      0x526 ../libopencm3/lib\libopencm3_stm32f4.a(gpio_common_f0234.o)
- .debug_line    0x00002580      0x4ee ../libopencm3/lib\libopencm3_stm32f4.a(rcc_common_all.o)
- .debug_line    0x00002a6e      0xb5a ../libopencm3/lib\libopencm3_stm32f4.a(rcc.o)
- .debug_line    0x000035c8      0x72a ../libopencm3/lib\libopencm3_stm32f4.a(usart_common_all.o)
- .debug_line    0x00003cf2      0x446 ../libopencm3/lib\libopencm3_stm32f4.a(usart_common_f124.o)
- .debug_line    0x00004138      0x418 ../libopencm3/lib\libopencm3_stm32f4.a(systick.o)
- .debug_line    0x00004550      0x429 ../libopencm3/lib\libopencm3_stm32f4.a(nvic.o)
- .debug_line    0x00004979      0x3c7 ../libopencm3/lib\libopencm3_stm32f4.a(flash.o)
- .debug_line    0x00004d40      0x3f0 ../libopencm3/lib\libopencm3_stm32f4.a(flash_common_all.o)
- .debug_line    0x00005130      0x409 ../libopencm3/lib\libopencm3_stm32f4.a(flash_common_idcache.o)
- .debug_line    0x00005539      0x32d ../libopencm3/lib\libopencm3_stm32f4.a(pwr.o)
+.debug_line     0x00000000     0x5862
+ .debug_line    0x00000000      0x7f7 src/firmware.o
+ .debug_line    0x000007f7      0x1be ../shared/src/core/fw_flash.o
+ .debug_line    0x000009b5      0x1d2 ../shared/src/core/ring-buffer.o
+ .debug_line    0x00000b87      0x1c3 ../shared/src/core/system.o
+ .debug_line    0x00000d4a      0x3a5 ../shared/src/core/uart.o
+ .debug_line    0x000010ef      0x143 startup.o
+ .debug_line    0x00001232      0x3ba ../libopencm3/lib\libopencm3_stm32f4.a(flash_common_f.o)
+ .debug_line    0x000015ec      0x61a ../libopencm3/lib\libopencm3_stm32f4.a(flash_common_f24.o)
+ .debug_line    0x00001c06      0x450 ../libopencm3/lib\libopencm3_stm32f4.a(gpio_common_all.o)
+ .debug_line    0x00002056      0x526 ../libopencm3/lib\libopencm3_stm32f4.a(gpio_common_f0234.o)
+ .debug_line    0x0000257c      0x4ee ../libopencm3/lib\libopencm3_stm32f4.a(rcc_common_all.o)
+ .debug_line    0x00002a6a      0xb5a ../libopencm3/lib\libopencm3_stm32f4.a(rcc.o)
+ .debug_line    0x000035c4      0x72a ../libopencm3/lib\libopencm3_stm32f4.a(usart_common_all.o)
+ .debug_line    0x00003cee      0x446 ../libopencm3/lib\libopencm3_stm32f4.a(usart_common_f124.o)
+ .debug_line    0x00004134      0x418 ../libopencm3/lib\libopencm3_stm32f4.a(systick.o)
+ .debug_line    0x0000454c      0x429 ../libopencm3/lib\libopencm3_stm32f4.a(nvic.o)
+ .debug_line    0x00004975      0x3c7 ../libopencm3/lib\libopencm3_stm32f4.a(flash.o)
+ .debug_line    0x00004d3c      0x3f0 ../libopencm3/lib\libopencm3_stm32f4.a(flash_common_all.o)
+ .debug_line    0x0000512c      0x409 ../libopencm3/lib\libopencm3_stm32f4.a(flash_common_idcache.o)
+ .debug_line    0x00005535      0x32d ../libopencm3/lib\libopencm3_stm32f4.a(pwr.o)
 
 .debug_str      0x00000000     0xfa0f
  .debug_str     0x00000000     0xfa0f src/firmware.o

@@ -236,7 +236,7 @@ int main(void)
     uint8_t gps_data[128]={'\0'};
     uint32_t offset = 0;
     uint32_t cnt = 0;
-     //fw_flash_erase_sector(6);
+    // fw_flash_erase_sector(6);
    // fw_flash_erase_sector(7);
 
     static uint8_t* flash_write_addr = (const uint8_t *)FLASH_SECTOR_6_ADDRESS;
@@ -244,6 +244,7 @@ int main(void)
         flash_write_addr+=data_length;
         if(flash_write_addr==(const uint8_t *)FLASH_SECTOR_6_ADDRESS){
             fw_flash_erase_sector(6);
+            break;
         }
     }
     /*
@@ -263,7 +264,8 @@ int main(void)
     }
 
     if(((uintptr_t)flash_write_addr<(FLASH_SECTOR_7_ADDRESS))&&((*((uint8_t *)FLASH_SECTOR_7_ADDRESS))!=0xff)) //if sector 7 is full
-    fw_flash_erase_sector(7);*/
+    fw_flash_erase_sector(7);
+*/
 
    // fw_flash_write(FLASH_SECTOR_6_ADDRESS,flash_data,1024);
    //uint8_t read_data[128]; // buffer in RAM
@@ -355,7 +357,7 @@ gpio_toggle(GPIOC, GPIO13);
                     uart_write_byte2(a+'0');
                     uart_write_byte2(b+'0');
                     uart_write2((char*)gps_data, 64);  
-                    flash_write_addr=(const uint8_t *)FLASH_SECTOR_6_ADDRESS;
+                    //flash_write_addr=(const uint8_t *)FLASH_SECTOR_6_ADDRESS;
                     fw_flash_write((uint32_t)flash_write_addr,gps_data,strlen(gps_data));
                     uint8_t buffer[128];
                     fw_flash_read((uint32_t)flash_write_addr,buffer,128);
