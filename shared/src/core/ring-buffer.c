@@ -47,3 +47,12 @@ bool ring_buffer_read(ring_buffer_t* rb, uint8_t* byte){
     return true;
 
 };
+
+uint32_t ring_buffer_write_status(ring_buffer_t* rb){
+
+    return rb->read_index;
+};
+uint32_t ring_buffer_read_status(ring_buffer_t* rb){
+
+    return rb->write_index;
+};

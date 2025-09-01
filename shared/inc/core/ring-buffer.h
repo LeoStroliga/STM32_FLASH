@@ -14,6 +14,8 @@ typedef struct ring_buffer_t{
 
 void ring_buffer_setup(ring_buffer_t* rb, uint8_t* buffer, uint32_t size);
 bool ring_buffer_empty(ring_buffer_t* rb);
+uint32_t ring_buffer_write_status(ring_buffer_t* rb);
+uint32_t ring_buffer_read_status(ring_buffer_t* rb);
 bool ring_buffer_write(ring_buffer_t* rb, uint8_t byte);
 bool ring_buffer_read(ring_buffer_t* rb, uint8_t* byte);
 

@@ -5,7 +5,7 @@ ENTRY(Reset_Handler)
 MEMORY
 {
   RAM (xrw) : ORIGIN = 0x20000000, LENGTH = 128K   /* 128 KB SRAM */
-  ROM (rx)  : ORIGIN = 0x08000000, LENGTH = 512K    /* 32 KB Flash */
+  ROM (rx)  : ORIGIN = 0x08000000, LENGTH = 512K    /* 512 KB Flash */
 }
 
 /* Sections */
@@ -70,7 +70,14 @@ SECTIONS
     _ebss = .;
     __bss_end__ = _ebss;
   } >RAM
+    /* Heap starts here */
+  . = ALIGN(4);
+  _end = .;
+  PROVIDE(end = _end);
+
 }
+
+
 
 /* Provide stack pointer symbol */
 PROVIDE(_stack = ORIGIN(RAM) + LENGTH(RAM));

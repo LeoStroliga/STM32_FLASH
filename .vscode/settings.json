@@ -22,7 +22,8 @@
         "ring-buffer.h": "c",
         "nvic.h": "c",
         "cortex.h": "c",
-        "common-defines.h": "c"
+        "common-defines.h": "c",
+        "fw_flash.h": "c"
     },
 
     

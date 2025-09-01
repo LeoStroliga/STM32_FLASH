@@ -28,7 +28,7 @@ void (* const vector_table[])(void) = {
     0,
     Default_Handler,
     sys_tick_handler,
-    [53] = usart2_isr,
+    [53] = usart1_isr,
     [54] = usart2_isr  
 };
 

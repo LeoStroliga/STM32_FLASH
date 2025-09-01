@@ -40,7 +40,9 @@ LDFLAGS = -Tlinker.ld -nostartfiles \
           -Wl,--gc-sections,--exclude-libs=ALL,-Map=$(MAP) \
           -mcpu=cortex-m4 -mthumb \
           -mfloat-abi=hard -mfpu=fpv4-sp-d16 \
+          --specs=nosys.specs \
           -L$(OPENCM3_DIR)/lib -lopencm3_$(CHIP)
+
 
 # Default target
 all: $(BINARY) $(HEX) $(BIN)
