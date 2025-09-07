@@ -45,29 +45,16 @@ const bool format_raw_gps_data(const char* data, char *out, uint32_t out_size){
         return false; // Not an RMC sentence
     }
  
-    
-
     char buff[256];
     strncpy(buff,data,256);
     buff[255]='\0';
-    /*
-    uart_write_byte2('\n');
-    uart_write2(data, strlen((char*)data));
-    uart_write_byte2('\n');
-      uart_write_byte2('\n');
-    uart_write2(buff, strlen((char*)buff));
-    uart_write_byte2('\n');*/
-
+  
     char *token;
     int field = 0;
     char *time_str = NULL,*status =NULL, *lat_str = NULL, *ns = NULL, *lon_str = NULL, *ew = NULL;
 
     token = strtok(buff,",");
-    /*
-    uart_write_byte2('\n');
-    uart_write2(token, strlen((char*)token));
-    uart_write_byte2('\n');
-*/
+   
       while (token != NULL) {
         field++;
         if (field == 2) time_str = token;  // UTC time
@@ -77,64 +64,50 @@ const bool format_raw_gps_data(const char* data, char *out, uint32_t out_size){
         if (field == 6) lon_str = token;   // Longitude
         if (field == 7) ew = token;
         token = strtok(NULL, ",");
-        /* uart_write2(token, strlen((char*)token));
-    uart_write_byte2(' ');*/
+        
     }
-/*
-uart_write2(time_str, strlen((char*)time_str));
-uart_write_byte2('\n');
-uart_write2(status, strlen((char*)status));
-uart_write_byte2('\n');
-uart_write2(lat_str, strlen((char*)lat_str));
-uart_write_byte2('\n');
-uart_write2(ns, strlen((char*)ns));
-uart_write_byte2('\n');
-uart_write2(lon_str, strlen((char*)lon_str));
-uart_write_byte2('\n');
-uart_write2(ew, strlen((char*)ew));
-uart_write_byte2('\n');*/
-uart_write_byte2(' ');
-
-uart_write2(status, strlen((char*)status));
-    uart_write_byte2(' ');
 
     if (!status || status[0] != 'A'){
-        uart_write2(status, strlen((char*)status));
-        uart_write_byte2('D');
-    uart_write_byte2(' ');
+        
         return false;
     }     //Invalid status
-uart_write_byte2('A');
-    uart_write_byte2(' ');
-        if (lat_str && lon_str && ns && ew && time_str) {
-            uart_write_byte2('1');
-    uart_write_byte2(' ');
-        // Convert latitude
-       int lat_deg = atoi(lat_str) / 100;
-int lat_min = atoi(lat_str) % 100;
-int lat_millionths = lat_deg * 1000000 + lat_min * 1000000 / 60;
-if (*ns == 'S') lat_millionths = -lat_millionths;
 
-int lon_deg = atoi(lon_str) / 100;
-int lon_min = atoi(lon_str) % 100;
-int lon_millionths = lon_deg * 1000000 + lon_min * 1000000 / 60;
-if (*ew == 'W') lon_millionths = -lon_millionths;
-        // Convert UTC time
-        uart_write_byte2('B');
-    uart_write_byte2(' ');
+        if (lat_str && lon_str && ns && ew && time_str) {
+            
+    
+        // Convert latitude
+        int lat_decimal_pos=3;
+        if(lat_str[0]=='0'){
+            lat_decimal_pos=2;
+        }
+        else if(lat_str[1]=='0'){
+            lat_decimal_pos=1;
+        }
+       int lat_deg = atoi(lat_str) / 100;
+        int lat_min = atoi(lat_str) % 100;
+        int lat_millionths = lat_deg * 1000000 + lat_min * 1000000 / 60;
+        if (*ns == 'S') lat_millionths = -lat_millionths;
+
+        // Convert longitude
+        int lon_decimal_pos=3;
+        if(lon_str[0]=='0'){
+            lon_decimal_pos=2;
+        }
+        else if(lon_str[1]=='0'){
+            lon_decimal_pos=1;
+        }
+        int lon_deg = atoi(lon_str) / 100;
+        int lon_min = atoi(lon_str) % 100;
+        int lon_millionths = lon_deg * 1000000 + lon_min * 1000000 / 60;
+        if (*ew == 'W') lon_millionths = -lon_millionths;
+       
        int hour=0, min=0, sec_int=0, sec_frac=0;
 if (strlen(time_str) >= 9) {
     hour = (time_str[0]-'0')*10 + (time_str[1]-'0');
     min  = (time_str[2]-'0')*10 + (time_str[3]-'0');
     sec_int  = (time_str[4]-'0')*10 + (time_str[5]-'0');
-    sec_frac = (time_str[7]-'0')*10 + (time_str[8]-'0');  // optional
+    sec_frac = (time_str[7]-'0')*10 + (time_str[8]-'0');  
 }
-       uart_write_byte2('C');
-    uart_write_byte2(' ');
-        //snprintf(out, out_size,
-             //    "Time: %02d:%02d:%05.2f UTC | Lat: %.6f | Lon: %.6f\r\n",
-             //    hour, min, sec, lat, lon);
-                  // Manual assembly
     int pos = 0;
     // Time:
     if(pos + 5 < out_size){
@@ -176,11 +149,17 @@ if (strlen(time_str) >= 9) {
         out[pos++] = 't';
         out[pos++] = ':';
     }
-    // simple integer to string for latitude
+    // integer to string for latitude
     char buf[12];
     itoa(lat_millionths, buf, 10);
-    for(int i=0; buf[i]!='\0' && pos < out_size-1; i++)
+    int buf_len = strlen(buf);
+    for(int i=0; buf[i]!='\0' && pos < out_size-1; i++){
+        if(i==(buf_len-6)){
+            out[pos++]='.';
+            continue;
+        }
         out[pos++] = buf[i];
+    }
 
     // separator
     if(pos+4 < out_size){
@@ -194,21 +173,22 @@ if (strlen(time_str) >= 9) {
     }
 
     // longitude
+    //$GNRMC,123519.00,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6A
+//Time: 12:34:56.00 UTC | Lat: 45.123456 | Lon: 15.987654
     itoa(lon_millionths, buf, 10);
-    for(int i=0; buf[i]!='\0' && pos < out_size-1; i++)
+    buf_len = strlen(buf);
+    for(int i=0; buf[i]!='\0' && pos < out_size-1; i++){
+        if(i==(buf_len-6)){
+            out[pos++]='.';
+            continue;
+        }
         out[pos++] = buf[i];
+    }
 
-    out[pos] = '\0';
+        out[pos] = '\0';
     
-        uart_write_byte2('D');
-    uart_write_byte2(' ');
-return true;
+        return true;
 
-
-       // size_t len = strlen(out);               //padding to reach 64 bytes
-      //   for (size_t i = len; i < 63; i++) {
-       // out[i] = (char)0xAA;
-    //}
        
     }
 
@@ -226,6 +206,8 @@ int main(void)
     uart_setup2();
 
     uint8_t flash_data[1024]  ={0};
+    //fw_flash_erase_sector(6);
+    //fw_flash_erase_sector(7);
     
     for(int i =0; i<1024;i++){
         flash_data[i]=0xaa;
@@ -236,9 +218,7 @@ int main(void)
     uint8_t gps_data[128]={'\0'};
     uint32_t offset = 0;
     uint32_t cnt = 0;
-    // fw_flash_erase_sector(6);
-   // fw_flash_erase_sector(7);
-
+  
     static uint8_t* flash_write_addr = (const uint8_t *)FLASH_SECTOR_6_ADDRESS;
     while(*flash_write_addr!=0xff){
         flash_write_addr+=data_length;
@@ -247,33 +227,6 @@ int main(void)
             break;
         }
     }
-    /*
-    while((uintptr_t)flash_write_addr<(FLASH_SECTOR_7_ADDRESS+FLASH_SECTOR_7_SIZE))
-    {
-        if(*flash_write_addr==0xff){
-            break;
-        }
-        flash_write_addr+=data_length;
-
-    }
-
-    if((uintptr_t)flash_write_addr==(FLASH_SECTOR_7_ADDRESS+FLASH_SECTOR_7_SIZE)){ //if sectors are full
-    fw_flash_erase_sector(6);
-    fw_flash_erase_sector(7);
-    flash_write_addr=(const uint8_t *)FLASH_SECTOR_6_ADDRESS;
-    }
-
-    if(((uintptr_t)flash_write_addr<(FLASH_SECTOR_7_ADDRESS))&&((*((uint8_t *)FLASH_SECTOR_7_ADDRESS))!=0xff)) //if sector 7 is full
-    fw_flash_erase_sector(7);
-*/
-
-   // fw_flash_write(FLASH_SECTOR_6_ADDRESS,flash_data,1024);
-   //uint8_t read_data[128]; // buffer in RAM
-    //fw_flash_read(0x00010000, read_data, sizeof(read_data))
-    
-  
-
-   // uint32_t data_length = strlen("Time: 12:34:56.00 UTC | Lat: 45.123456 | Lon: 15.987654\0");
   
       
 gpio_toggle(GPIOC, GPIO13);
@@ -289,40 +242,14 @@ gpio_toggle(GPIOC, GPIO13);
         gpio_toggle(GPIOC, GPIO13);
         
         start_time=system_get_ticks();
-      //  uart_write_byte1('s');
-       // uart_write_byte2('a');
+     
         }
            // podatci s gps modula
         if(uart_data_available2()){
-           // gpio_toggle(GPIOC, GPIO13);
-            /*
-            uint8_t data1 = uart_read_byte1();
-            uint8_t data2 = uart_read_byte2();
-            uart_write_byte1(data1);
-            uart_write_byte1(data2);
-            uart_write_byte2(data1);
-            uart_write_byte2(data2);*/
-
-            /*
-            uart_read2(raw_gps_data,sizeof(raw_gps_data));
-            gps_data=format_raw_gps_data(raw_gps_data);
-            fw_flash_write(flash_write_addr,gps_data,data_length);
-            flash_write_addr++;
-            //if sectors are full
-            if(flash_write_addr==(FLASH_SECTOR_6_SIZE+FLASH_SECTOR_6_SIZE)){  //end of sector 6
-            fw_flash_erase_sector(7);
-            }
-            else if(flash_write_addr==(FLASH_SECTOR_7_SIZE+FLASH_SECTOR_7_ADDRESS)){ //end of sector 7
-            fw_flash_erase_sector(6);
-            flash_write_addr=(const uint8_t *)FLASH_SECTOR_6_ADDRESS;
-            }
-
-            */
+           
 
          
            
-           // uart_read2(data2,64);
-           // uart_write2(data2,64);
            uint8_t data2 = uart_read_byte2();
            raw_gps_data[cnt]=data2;
            cnt++;
@@ -361,7 +288,7 @@ gpio_toggle(GPIOC, GPIO13);
                     fw_flash_write((uint32_t)flash_write_addr,gps_data,strlen(gps_data));
                     uint8_t buffer[128];
                     fw_flash_read((uint32_t)flash_write_addr,buffer,128);
-                     uart_write2(buffer, 128);
+                    uart_write2(buffer, 128);
                     flash_write_addr+=data_length;
                     //if sectors are full
                     if(flash_write_addr==(FLASH_SECTOR_6_SIZE+FLASH_SECTOR_6_SIZE)){  //end of sector 6
