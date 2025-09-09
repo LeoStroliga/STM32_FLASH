@@ -42,135 +42,121 @@ static void delay_ms(uint32_t ms) {
 //Time: 12:34:56.00 UTC | Lat: 45.123456 | Lon: 15.987654
 //2025-09-08T12:34:56Z,16.17136,43.32502 for influx
 
-const bool format_raw_gps_data(const char* data, char *out, uint32_t out_size) {
-    if (strncmp(data, "$GNRMC", 6) != 0 && strncmp(data, "$GPRMC", 6) != 0) {
-        return false; // Not an RMC sentence
+
+// Convert string "DDMM.MMMM" or "DDDMM.MMMM" to millionths degrees
+static int convert_gps_coord(const char *coord, char dir) {
+    int deg_len = (coord[4] == '.' ? 2 : 3);  // Latitude 2 digits, Longitude 3 digits
+    int deg = 0;
+    for(int i=0;i<deg_len;i++) deg = deg*10 + (coord[i]-'0');
+
+    int min = 0;
+    for(int i=deg_len;i<deg_len+2;i++) min = min*10 + (coord[i]-'0');
+
+    int frac = 0;
+    int mul = 100000;
+    for(int i=deg_len+3;i<deg_len+9;i++, mul/=10) {
+        frac += (coord[i]-'0')*mul;
     }
+
+    int result = deg*1000000 + (min*1000000)/60 + frac/60;
+    if(dir=='S' || dir=='W') result = -result;
+    return result;
+}
+
+// Format raw GPS RMC into "YYYY-MM-DDTHH:MM:SSZ,lon,lat"
+static bool format_raw_gps_data(const char* data, char *out, uint32_t out_size) {
+    if(strncmp(data,"$GNRMC",6)!=0 && strncmp(data,"$GPRMC",6)!=0) return false;
 
     char buff[256];
-    strncpy(buff, data, 256);
-    buff[255] = '\0';
+    strncpy(buff,data,255);
+    buff[255]='\0';
 
     char *token;
-    int field = 0;
-    char *time_str = NULL, *status = NULL, *lat_str = NULL, *ns = NULL, *lon_str = NULL, *ew = NULL;
+    int field=0;
+    char *time_str=NULL,*status=NULL,*lat_str=NULL,*ns=NULL,*lon_str=NULL,*ew=NULL,*date_str=NULL;
 
-    token = strtok(buff, ",");
-    while (token != NULL) {
+    token = strtok(buff,",");
+    while(token) {
         field++;
-        if (field == 2) time_str = token;   // UTC time
-        if (field == 3) status = token;     // Valid or invalid
-        if (field == 4) lat_str = token;    // Latitude
-        if (field == 5) ns = token;
-        if (field == 6) lon_str = token;    // Longitude
-        if (field == 7) ew = token;
-        token = strtok(NULL, ",");
+        if(field==2) time_str=token;
+        if(field==3) status=token;
+        if(field==4) lat_str=token;
+        if(field==5) ns=token;
+        if(field==6) lon_str=token;
+        if(field==7) ew=token;
+        if(field==10) date_str=token;
+        token = strtok(NULL,",");
     }
 
-    if (!status || status[0] != 'A') {
-        return false; // Invalid status
-    }
+    if(!status || status[0]!='A') return false;
+    if(!lat_str||!lon_str||!ns||!ew||!time_str) return false;
 
-    if (!lat_str || !lon_str || !ns || !ew || !time_str) {
-        return false;
-    }
-
-    // Convert latitude
-    int lat_deg = atoi(lat_str) / 100;
-    int lat_min = atoi(lat_str) % 100;
-    int lat_millionths = lat_deg * 1000000 + lat_min * 1000000 / 60;
-    if (*ns == 'S') lat_millionths = -lat_millionths;
-
-    // Convert longitude
-    int lon_deg = atoi(lon_str) / 100;
-    int lon_min = atoi(lon_str) % 100;
-    int lon_millionths = lon_deg * 1000000 + lon_min * 1000000 / 60;
-    if (*ew == 'W') lon_millionths = -lon_millionths;
-
-    // Parse UTC time
-    int hour = 0, min = 0, sec_int = 0;
-    if (strlen(time_str) >= 6) {
-        hour    = (time_str[0]-'0')*10 + (time_str[1]-'0');
-        min     = (time_str[2]-'0')*10 + (time_str[3]-'0');
+    int lat_millionths = convert_gps_coord(lat_str,*ns);
+    int lon_millionths = convert_gps_coord(lon_str,*ew);
+    int hour = 0, min = 0, sec_int = 0; 
+    if (strlen(time_str) >= 6) { 
+        hour = (time_str[0]-'0')*10 + (time_str[1]-'0'); 
+        min = (time_str[2]-'0')*10 + (time_str[3]-'0'); 
         sec_int = (time_str[4]-'0')*10 + (time_str[5]-'0');
     }
 
-    // Hardcode date for example or add real date parsing if available
-    int year=2025, month=9, day=8;
+    int day   = (date_str[0]-'0')*10 + (date_str[1]-'0');
+    int month = (date_str[2]-'0')*10 + (date_str[3]-'0');
+    int year  = 2000 + (date_str[4]-'0')*10 + (date_str[5]-'0');
 
-    int pos = 0;
-
-    // Format: YYYY-MM-DDTHH:MM:SSZ
-    if (pos + 20 < out_size) {
-        out[pos++] = '0' + (year/1000)%10;
+    // DateTime YYYY-MM-DDTHH:MM:SSZ
+    //2025-09-08T12:34:56Z,16.17136,43.32502
+/*
+    int pos=0;
+    
+    
+    const int dt[6]={year,month,day,hour,min,sec};
+    for(int i=0;i<6;i++){
+        if(i<3){ out[pos++]='0'+(dt[i]/10); out[pos++]='0'+(dt[i]%10); if(i<2) out[pos++]='-'; }
+        else{ out[pos++]='0'+(dt[i]/10); out[pos++]='0'+(dt[i]%10); if(i<5) out[pos++]=':'; }
+    }
+    out[pos++]='Z'; out[pos++]=',';*/
+    int pos = 0; // Format: YYYY-MM-DDTHH:MM:SSZ 
+    if (pos + 20 < out_size) 
+        { out[pos++] = '0' + (year/1000)%10;
         out[pos++] = '0' + (year/100)%10;
         out[pos++] = '0' + (year/10)%10;
-        out[pos++] = '0' + (year%10);
-        out[pos++] = '-';
-        out[pos++] = '0' + (month/10);
-        out[pos++] = '0' + (month%10);
-        out[pos++] = '-';
-        out[pos++] = '0' + (day/10);
-        out[pos++] = '0' + (day%10);
-        out[pos++] = 'T';
-        out[pos++] = '0' + (hour/10);
-        out[pos++] = '0' + (hour%10);
-        out[pos++] = ':';
-        out[pos++] = '0' + (min/10);
-        out[pos++] = '0' + (min%10);
-        out[pos++] = ':';
-        out[pos++] = '0' + (sec_int/10);
-        out[pos++] = '0' + (sec_int%10);
-        out[pos++] = 'Z';
-        out[pos++] = ',';
-    }
-
-    // Convert lon_millionths to "xx.xxxxxx" format manually
-    char buf[12];
-    int lon_abs = lon_millionths < 0 ? -lon_millionths : lon_millionths;
-    int lon_int = lon_abs / 1000000;
-    int lon_frac = lon_abs % 1000000;
-
-    // integer part
-    int len = 0;
-    int tmp = lon_int;
-    if (tmp == 0) buf[len++] = '0';
-    else {
-        int digits[3], d = 0;
-        while(tmp > 0) { digits[d++] = tmp % 10; tmp /= 10; }
-        for(int i=d-1;i>=0;i--) buf[len++] = '0'+digits[i];
-    }
-    buf[len++] = '.';
-    // fractional part
-    int frac = 100000; // to get 6 digits
-    for(int i=0;i<6;i++){
-        buf[len++] = '0' + (lon_frac / frac) % 10;
-        frac /=10;
-    }
-    if(lon_millionths <0) out[pos++]='-';
+        out[pos++] = '0' + (year%10); 
+        out[pos++] = '-'; 
+        out[pos++] = '0' + (month/10); 
+        out[pos++] = '0' + (month%10); 
+        out[pos++] = '-'; 
+        out[pos++] = '0' + (day/10); 
+        out[pos++] = '0' + (day%10); 
+        out[pos++] = 'T'; out[pos++] = '0' + (hour/10); 
+        out[pos++] = '0' + (hour%10); out[pos++] = ':'; 
+        out[pos++] = '0' + (min/10); 
+        out[pos++] = '0' + (min%10); 
+        out[pos++] = ':'; out[pos++] = '0' + (sec_int/10); 
+        out[pos++] = '0' + (sec_int%10); 
+        out[pos++] = 'Z'; 
+        out[pos++] = ','; }
+    // Convert lon_millionths
+    if(lon_millionths<0){ out[pos++]='-'; lon_millionths=-lon_millionths; }
+    int lon_int = lon_millionths/1000000;
+    int lon_frac = lon_millionths%1000000;
+    char buf[12]; int len=0;
+    if(lon_int==0) buf[len++]='0';
+    else { int d[3],di=0,tmp=lon_int; while(tmp){d[di++]=tmp%10; tmp/=10;} for(int i=di-1;i>=0;i--) buf[len++]='0'+d[i]; }
+    buf[len++]='.';
+    int mul=100000; for(int i=0;i<6;i++,mul/=10) buf[len++]='0'+(lon_frac/mul)%10;
     for(int i=0;i<len;i++) out[pos++]=buf[i];
     out[pos++]=',';
 
     // Convert lat_millionths
-    int lat_abs = lat_millionths < 0 ? -lat_millionths : lat_millionths;
-    int lat_int = lat_abs / 1000000;
-    int lat_frac = lat_abs % 1000000;
-
+    if(lat_millionths<0){ out[pos++]='-'; lat_millionths=-lat_millionths; }
+    int lat_int = lat_millionths/1000000;
+    int lat_frac = lat_millionths%1000000;
     len=0;
-    tmp = lat_int;
-    if (tmp ==0) buf[len++]='0';
-    else {
-        int digits[3], d=0;
-        while(tmp>0){digits[d++]=tmp%10; tmp/=10;}
-        for(int i=d-1;i>=0;i--) buf[len++]='0'+digits[i];
-    }
+    if(lat_int==0) buf[len++]='0';
+    else { int d[3],di=0,tmp=lat_int; while(tmp){d[di++]=tmp%10; tmp/=10;} for(int i=di-1;i>=0;i--) buf[len++]='0'+d[i]; }
     buf[len++]='.';
-    frac=100000;
-    for(int i=0;i<6;i++){
-        buf[len++]='0'+(lat_frac/frac)%10;
-        frac/=10;
-    }
-    if(lat_millionths<0) out[pos++]='-';
+    mul=100000; for(int i=0;i<6;i++,mul/=10) buf[len++]='0'+(lat_frac/mul)%10;
     for(int i=0;i<len;i++) out[pos++]=buf[i];
 
     out[pos]='\0';
@@ -187,8 +173,8 @@ int main(void)
     gpio_set(GPIOC, GPIO13);
     uart_setup1();
     uart_setup2();
-    //  fw_flash_erase_sector(6);
-    //fw_flash_erase_sector(7);
+     //fw_flash_erase_sector(6);
+   //fw_flash_erase_sector(7);
     
     //lora setup
     uart_write1("AT+RESET\r\n", 10);
@@ -232,9 +218,9 @@ int main(void)
     }
    
   uint8_t sent_data_length_array[8]={'\0'};
-  uint32_t sent_data_length=strlen("2025-09-08T15:00:38Z,16.283333,43.533333");
+  uint32_t sent_data_length=strlen("2025-09-08T12:34:56Z,16.171360,43.325020");
   itoa(sent_data_length,sent_data_length_array,10);
-  
+  uint8_t buffer[128];
       
 gpio_toggle(GPIOC, GPIO13);
    // fw_flash_write((uint32_t)flash_write_addr,flash_data,strlen(flash_data));
@@ -251,7 +237,7 @@ gpio_toggle(GPIOC, GPIO13);
         start_time=system_get_ticks();
         fw_flash_read((uint32_t)flash_read_addr,flash_data,data_length);
         if(flash_data[0]!=0xff){
-            uart_write1("AT+SEND=2,5,HELLO\r\n", 19);
+          //  uart_write1("AT+SEND=2,5,HELLO\r\n", 19);
             delay_ms(200);
         uart_write1("AT+SEND=2,", 10);
         uart_write1(sent_data_length_array, strlen(sent_data_length_array));
@@ -289,26 +275,30 @@ gpio_toggle(GPIOC, GPIO13);
                         raw_gps_data[cnt-1] = '\0';
 
                      uart_write2(raw_gps_data, strlen((char*)raw_gps_data));
+                     uart_write_byte2('\n');
                      format_raw_gps_data(raw_gps_data,(char*)gps_data,sizeof(gps_data));
                      uart_write2(gps_data, strlen((char*)gps_data));
+                     uart_write_byte2('\n');
                      size_t len = strlen(gps_data);
                         for(size_t i = len; i < 32; i++){
                             gps_data[i] = '\0';  // Padding for gps_data
                             }
                             gps_data[64] = '\0';
-                    uint32_t a = strlen((char*)gps_data)/10;
-                    uint32_t b = strlen((char*)gps_data)%10;
+                    //uint32_t a = strlen((char*)gps_data)/10;
+                    //uint32_t b = strlen((char*)gps_data)%10;
                      uart_write_byte2('\n');
-                    uart_write2(gps_data, strlen((char*)gps_data));
-                    uart_write_byte2('\n');
-                    uart_write_byte2(a+'0');
-                    uart_write_byte2(b+'0');
-                    uart_write2((char*)gps_data, 64);  
+                    //uart_write2(gps_data, strlen((char*)gps_data));
+                    //uart_write_byte2('\n');
+                    //uart_write_byte2(a+'0');
+                    //uart_write_byte2(b+'0');
+                    //uart_write2((char*)gps_data, 64);  
+                    //uart_write_byte2('\n');
                    // flash_write_addr=(const uint8_t *)FLASH_SECTOR_6_ADDRESS;
                     fw_flash_write((uint32_t)flash_write_addr,gps_data,strlen(gps_data));
-                    uint8_t buffer[128];
+                    
                     fw_flash_read((uint32_t)flash_write_addr,buffer,128);
-                    uart_write2(buffer, 128);
+                    //uart_write2(buffer, 128);
+                    //uart_write_byte2('\n');
                     flash_write_addr+=data_length;
                     //if sectors are full
                     if(flash_write_addr==(FLASH_SECTOR_6_SIZE+FLASH_SECTOR_6_SIZE)){  //end of sector 6

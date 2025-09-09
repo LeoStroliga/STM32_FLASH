@@ -1,20 +1,22 @@
+
 import serial
 import time
 from datetime import datetime
 from influxdb_client import InfluxDBClient, Point, WritePrecision
+from influxdb_client.client.write_api import SYNCHRONOUS
 
 # --- CONFIG ---
 SERIAL_PORT = "COM7"      # Windows COM port
 BAUDRATE = 115200
 INFLUX_URL = "http://localhost:8086"
-INFLUX_TOKEN = "QimX0B_5GNzG-CD-WLIhHvRm6Z_N8pOvXDgsbCt0ZfHyNcIm479sFLOqADpkyWlmBzmij0iIyhnwKcAyDMecAA=="
+INFLUX_TOKEN = "JuJKyCftZy25lQBEAm-uKdOaaugTspaJoafF_jMTOhQh5LN6Bmto2HA_4z396UtYj0YydK3grsKhnZ8fhZXo2w=="
 INFLUX_ORG = "projekt"
 INFLUX_BUCKET = "lora_data"
 # ----------------
 
 def connect_influx():
     client = InfluxDBClient(url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG)
-    write_api = client.write_api(write_options=None)
+    write_api = client.write_api(write_options=SYNCHRONOUS)
     print("[INFO] Connected to InfluxDB")
     return client, write_api
 
@@ -29,32 +31,35 @@ def connect_serial():
             time.sleep(5)
 
 def process_line(line, write_api):
-    text = line.decode("utf-8", errors="replace").strip()
-    if not text:
-        return
-
-    parts = text.split(',')
-    if len(parts) != 3:
-        print(f"[WARN] Invalid CSV format: {text}")
-        return
-
-    timestamp_str, lon_str, lat_str = parts
-
     try:
-        ts = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))  # UTC
-        lon = float(lon_str)
-        lat = float(lat_str)
-    except ValueError as e:
-        print(f"[WARN] Value error: {e}, line: {text}")
-        return
+        text = line.decode("utf-8", errors="replace").strip()
+        if not text.startswith("+RCV="):
+            return
 
-    point = Point("lora_gps") \
-        .field("lon", lon) \
-        .field("lat", lat) \
-        .time(ts, WritePrecision.NS)
+        # Example: +RCV=1,40,2025-09-08T15:00:08Z,16.283333,43.533333,-52,54
+        parts = text.split(',')
+        if len(parts) < 5:
+            return
 
-    write_api.write(bucket=INFLUX_BUCKET, org=INFLUX_ORG, record=point)
-    print(f"[{ts.isoformat()}] Written: {text}")
+        timestamp_str = parts[2]
+        lon = float(parts[3])
+        lat = float(parts[4])
+
+        try:
+            timestamp_dt = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%SZ")
+        except ValueError:
+            timestamp_dt = datetime.utcnow()
+
+        point = Point("lora_gps") \
+            .field("lat", lat) \
+            .field("lon", lon) \
+            .time(timestamp_dt, WritePrecision.S)
+
+        write_api.write(bucket=INFLUX_BUCKET, org=INFLUX_ORG, record=point)
+        print(f"[OK] Written → time={timestamp_dt.isoformat()}Z, lon={lon}, lat={lat}")
+
+    except Exception as e:
+        print(f"[ERROR] Failed to process line: {e}")
 
 def main():
     client, write_api = connect_influx()

@@ -1,0 +1,5 @@
+SELECT
+  timestamp AS "time",
+  longitude,
+  latitude
+FROM gps_data
