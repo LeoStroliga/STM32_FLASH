@@ -167,8 +167,8 @@ int main(void)
      //fw_flash_erase_sector(6);
    //fw_flash_erase_sector(7);
    //gps setup
-   uart_write2("$PMTK220,10000*2F\r\n",19);
-   uart_write2("$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0*29\r\n",37);
+   uart_write2("@BSSL 0x20\r\n", 12);
+   uart_write2("@GSOP 0 10000 0\r\n", 17);
     
     //lora setup
     uart_write1("AT+RESET\r\n", 10);
