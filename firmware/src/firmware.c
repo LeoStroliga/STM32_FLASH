@@ -106,17 +106,8 @@ static bool format_raw_gps_data(const char* data, char *out, uint32_t out_size) 
 
     // DateTime YYYY-MM-DDTHH:MM:SSZ
     //2025-09-08T12:34:56Z,16.17136,43.32502
-/*
-    int pos=0;
-    
-    
-    const int dt[6]={year,month,day,hour,min,sec};
-    for(int i=0;i<6;i++){
-        if(i<3){ out[pos++]='0'+(dt[i]/10); out[pos++]='0'+(dt[i]%10); if(i<2) out[pos++]='-'; }
-        else{ out[pos++]='0'+(dt[i]/10); out[pos++]='0'+(dt[i]%10); if(i<5) out[pos++]=':'; }
-    }
-    out[pos++]='Z'; out[pos++]=',';*/
-    int pos = 0; // Format: YYYY-MM-DDTHH:MM:SSZ 
+
+    int pos = 0; 
     if (pos + 20 < out_size) 
         { out[pos++] = '0' + (year/1000)%10;
         out[pos++] = '0' + (year/100)%10;
@@ -175,6 +166,9 @@ int main(void)
     uart_setup2();
      //fw_flash_erase_sector(6);
    //fw_flash_erase_sector(7);
+   //gps setup
+   uart_write2("$PMTK220,10000*2F\r\n",19);
+   uart_write2("$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0*29\r\n",37);
     
     //lora setup
     uart_write1("AT+RESET\r\n", 10);
@@ -216,6 +210,8 @@ int main(void)
             break;
         }
     }
+    if(*flash_read_addr==0xff&&*FLASH_SECTOR_7_ADDRESS!=0xff)
+    flash_read_addr = (const uint8_t *)FLASH_SECTOR_7_ADDRESS;
    
   uint8_t sent_data_length_array[8]={'\0'};
   uint32_t sent_data_length=strlen("2025-09-08T12:34:56Z,16.171360,43.325020");
@@ -223,6 +219,7 @@ int main(void)
   uint8_t buffer[128];
       
 gpio_toggle(GPIOC, GPIO13);
+    uint8_t lora_data[26];
    // fw_flash_write((uint32_t)flash_write_addr,flash_data,strlen(flash_data));
     while(1)
     {
@@ -236,6 +233,7 @@ gpio_toggle(GPIOC, GPIO13);
         
         start_time=system_get_ticks();
         fw_flash_read((uint32_t)flash_read_addr,flash_data,data_length);
+        if(*FLASH_SECTOR_6_ADDRESS!=0xff||*FLASH_SECTOR_7_ADDRESS!=0xff)
         if(flash_data[0]!=0xff){
           //  uart_write1("AT+SEND=2,5,HELLO\r\n", 19);
             delay_ms(200);
@@ -246,9 +244,15 @@ gpio_toggle(GPIOC, GPIO13);
         uart_write1(flash_data, sent_data_length);
         uart_write_byte1('\r');
         uart_write_byte1('\n');
-        flash_read_addr+=data_length;
+        if(uart_data_available1()){
+            uart_read1(lora_data,26);
+            flash_read_addr+=data_length;
+            }
+        //flash_read_addr+=data_length;
         }
-     
+        if(flash_read_addr==(FLASH_SECTOR_7_SIZE+FLASH_SECTOR_7_ADDRESS)){ //end of sector 7
+                    flash_read_addr=(const uint8_t *)FLASH_SECTOR_6_ADDRESS;
+                    }
         }
            // podatci s gps modula
         if(uart_data_available2()){
@@ -303,10 +307,14 @@ gpio_toggle(GPIOC, GPIO13);
                     //if sectors are full
                     if(flash_write_addr==(FLASH_SECTOR_6_SIZE+FLASH_SECTOR_6_SIZE)){  //end of sector 6
                     fw_flash_erase_sector(7);
+                    if(flash_read_addr<(const uint8_t *)FLASH_SECTOR_7_ADDRESS)
+                    flash_read_addr=(const uint8_t *)FLASH_SECTOR_7_ADDRESS;
                     }
                     else if(flash_write_addr==(FLASH_SECTOR_7_SIZE+FLASH_SECTOR_7_ADDRESS)){ //end of sector 7
                     fw_flash_erase_sector(6);
                     flash_write_addr=(const uint8_t *)FLASH_SECTOR_6_ADDRESS;
+                    if(flash_read_addr>=(const uint8_t *)FLASH_SECTOR_7_ADDRESS)
+                    flash_read_addr=(const uint8_t *)FLASH_SECTOR_6_ADDRESS;
                     }
                     
                      cnt = 0;

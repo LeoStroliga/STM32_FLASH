@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 #define BAUD_RATE 115200
-#define RING_BUFFER_SIZE 128
+#define RING_BUFFER_SIZE 1024
 
 // USART1
 static ring_buffer_t rb1 = {0};
